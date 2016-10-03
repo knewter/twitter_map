@@ -125,6 +125,6 @@ markersView model =
 markerView : ( Int, ( LatLng, String ) ) -> Html Msg
 markerView ( key, ( latLng, label ) ) =
     li []
-        [ span [] [ text (label ++ " " ++ (toString latLng)) ]
+        [ a [ href "#", onClick <| SetLatLng latLng ] [ text (label ++ " " ++ (toString latLng)) ]
         , a [ href "#", onClick <| RemoveMarker key ] [ text "[x]" ]
         ]
