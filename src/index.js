@@ -24,15 +24,24 @@ app.ports.setView.subscribe((data) => {
 })
 
 app.ports.setMarkers.subscribe((data) => {
-  console.log(data)
+  let newMarkers = {}
   data.forEach((data, index)  => {
     let [id, latLng, markerOptions, popupText] = data
-    markerOptions.icon = new L.Icon(markerOptions.icon)
-    let marker = L.marker(latLng, markerOptions)
-    marker.bindPopup(popupText)
-    if(!markers.hasOwnProperty(id)){
+    if (markers.hasOwnProperty(id)) {
+      newMarkers[id] = markers[id]
+    } else {
+      markerOptions.icon = new L.Icon(markerOptions.icon)
+      let marker = L.marker(latLng, markerOptions)
+      marker.bindPopup(popupText)
       marker.addTo(mymap)
+      newMarkers[id] = marker
     }
-    markers[id] = marker
   })
+  Object.getOwnPropertyNames(markers).forEach((id) => {
+    if (!newMarkers[id]){
+      markers[id].remove()
+      delete markers[id]
+    }
+  })
+  markers = newMarkers
 })
