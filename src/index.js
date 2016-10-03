@@ -14,19 +14,17 @@ let markers = {}
 
 mymap.on('move', (evt) => {
   center = mymap.getCenter()
-  console.log(center)
   app.ports.getCenter.send([center.lat, center.lng])
 })
 
 app.ports.setView.subscribe((data) => {
-  console.log(data)
   mymap.setView.apply(mymap, data)
 })
 
 app.ports.setMarkers.subscribe((data) => {
   let newMarkers = {}
   data.forEach((data, index)  => {
-    let [id, latLng, markerOptions, popupText] = data
+    let [id, latLng, markerOptions, popupText, showPopup] = data
     if (markers.hasOwnProperty(id)) {
       newMarkers[id] = markers[id]
     } else {
@@ -35,6 +33,11 @@ app.ports.setMarkers.subscribe((data) => {
       marker.bindPopup(popupText)
       marker.addTo(mymap)
       newMarkers[id] = marker
+    }
+    if (showPopup) {
+      newMarkers[id].openPopup()
+    } else {
+      newMarkers[id].closePopup()
     }
   })
   Object.getOwnPropertyNames(markers).forEach((id) => {
