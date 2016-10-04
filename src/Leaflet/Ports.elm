@@ -3,6 +3,7 @@ port module Leaflet.Ports
         ( setView
         , setMarkers
         , getCenter
+        , updateMarkerPopupState
         )
 
 import Leaflet.Types exposing (LatLng, ZoomPanOptions, MarkerOptions)
@@ -22,3 +23,6 @@ port setMarkers : List ( Int, LatLng, MarkerOptions, String, Bool ) -> Cmd msg
 
 
 port getCenter : (LatLng -> msg) -> Sub msg
+
+
+port updateMarkerPopupState : (( Int, Bool ) -> msg) -> Sub msg

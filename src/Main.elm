@@ -27,6 +27,7 @@ type Msg
     | RemoveMarker Int
     | ShowMarkerPopup Int
     | HideMarkerPopup Int
+    | UpdateMarkerPopupState ( Int, Bool )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -78,6 +79,15 @@ update msg model =
                 , Leaflet.Ports.setMarkers <| markersAsOutboundType newModel.markers
                 )
 
+        UpdateMarkerPopupState ( id, isShown ) ->
+            let
+                newModel =
+                    updateMarkerPopupState id isShown model
+            in
+                ( newModel
+                , Cmd.none
+                )
+
 
 addMarker : ( Int, Marker ) -> Model -> Model
 addMarker ( id, marker ) model =
@@ -89,14 +99,24 @@ removeMarker id model =
     { model | markers = Dict.remove id model.markers }
 
 
+updateMarker : Int -> (Marker -> Marker) -> Model -> Model
+updateMarker id mapFun model =
+    { model | markers = Dict.update id (Maybe.map mapFun) model.markers }
+
+
+updateMarkerPopupState : Int -> Bool -> Model -> Model
+updateMarkerPopupState id isShown model =
+    updateMarker id (\( latLng, label, showPopup ) -> ( latLng, label, isShown )) model
+
+
 showMarkerPopup : Int -> Model -> Model
 showMarkerPopup id model =
-    { model | markers = Dict.update id (Maybe.map (\( latLng, label, showPopup ) -> ( latLng, label, True ))) model.markers }
+    updateMarkerPopupState id True model
 
 
 hideMarkerPopup : Int -> Model -> Model
 hideMarkerPopup id model =
-    { model | markers = Dict.update id (Maybe.map (\( latLng, label, showPopup ) -> ( latLng, label, False ))) model.markers }
+    updateMarkerPopupState id False model
 
 
 markersAsOutboundType : Dict Int Marker -> List ( Int, LatLng, MarkerOptions, String, Bool )
@@ -131,8 +151,16 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = always <| Leaflet.Ports.getCenter GetCenter
+        , subscriptions = subscriptions
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Leaflet.Ports.getCenter GetCenter
+        , Leaflet.Ports.updateMarkerPopupState UpdateMarkerPopupState
+        ]
 
 
 view : Model -> Html Msg
@@ -158,9 +186,17 @@ markersView model =
 
 markerView : ( Int, Marker ) -> Html Msg
 markerView ( key, ( latLng, label, popupOpen ) ) =
-    li []
-        [ a [ href "#", onClick <| SetLatLng latLng ] [ text (label ++ " " ++ (toString latLng)) ]
-        , a [ href "#", onClick <| RemoveMarker key ] [ text "[x]" ]
-        , a [ href "#", onClick <| ShowMarkerPopup key ] [ text "Show popup" ]
-        , a [ href "#", onClick <| HideMarkerPopup key ] [ text "Hide popup" ]
-        ]
+    let
+        popupAction =
+            case popupOpen of
+                True ->
+                    a [ href "#", onClick <| HideMarkerPopup key ] [ text "Hide popup" ]
+
+                False ->
+                    a [ href "#", onClick <| ShowMarkerPopup key ] [ text "Show popup" ]
+    in
+        li []
+            [ a [ href "#", onClick <| SetLatLng latLng ] [ text (label ++ " " ++ (toString latLng)) ]
+            , a [ href "#", onClick <| RemoveMarker key ] [ text "[x]" ]
+            , popupAction
+            ]
